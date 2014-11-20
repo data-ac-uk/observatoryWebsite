@@ -2,11 +2,12 @@
 
 $page =  @$_GET["page"]?$_GET["page"]:"All";
 
-$json = file_get_contents( "current.json" );
+$json = file_get_contents( "data/observations/latest.json" );
 $data = json_decode( $json, true );
 
 $BOOLS = array( "drupal", "jquery" );
-$ACCOUNTS = array( "twitter", "youtube" );
+$ACCOUNTS = array( "twitter", "youtube", "facebook", "flickr","vimeo","pinterest","instagram" );
+
 $SETS = array("server","server_version" );
 $GROUPS = array();
 
@@ -29,6 +30,7 @@ foreach( $data as $pdomain=>$record )
 	{
 		if( isset( $by_url[$record["site_url"]]["institution"] ) )
 		{	
+			continue; // bad chris, just need this to work for seminar
 			print "dang: $pdomain already has an org set: \n";
 			print_r( $by_url[$record["site_url"]]["institution"] );
 			exit;
@@ -151,8 +153,10 @@ global $stats;
 global $by_url;
 
 print "<p><strong>Disclaimer:</strong> all this code is totally new and probably<span style='font-size:70%'>(definitely)</span> has some bugs. The data currently shown should not be regarded as citable just yet. Let's call it \"for entertainment purposes only\", but that will change as we shake out the kinks. All the data collected by this service will be made available for free reuse and all the code will be open source; available for inspection and reuse.</p>";
-print "<p>These observations were taken in March 2014. Soon we plan to perform this weekly.</p>";
+print "<p>Observations taken each weekend.</p>";
 print "<p>What observations would you like us to add? Ideally ones that are easy to do with a regexp on the homepage. <a href='mailto:chris@data.ac.uk'>Email us</a> or <a href='http://twitter.com/dataacuk'>send us a tweet</a>.</p>";
+print "<p>Get the data: <a download='observatory-data-ac-uk-latest.json' href='/data/observations/latest.json'>Latest Observations</a>. JSON file, approx 25Mb. License: CC0 - no attribution required, but please attribute observatory.data.ac.uk if convenient.</p>";
+
 $links = array( 
 	array( "page"=>"All", "label"=>"All Sites" ),
 	array( "page"=>"University Sites", "label"=>"University Sites" ),
