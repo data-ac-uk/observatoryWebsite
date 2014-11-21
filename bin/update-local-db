@@ -1,0 +1,59 @@
+#!/usr/bin/env php
+<?php
+
+$path = explode("/", __DIR__);
+array_pop( $path ); # lose bin
+$base_dir = join( "/", $path );
+
+require_once( "$base_dir/config.php" );
+require_once( "$base_dir/lib/apilib.php" );
+
+$localdb = new LocalDB();
+$srcdb = new SourceDB();
+
+# erase everything in the localdb
+$localdb->resetTables();
+
+$srcdb->readProfiles( function( $row, $rows_i, $rows_n ) {
+	global $localdb;
+
+	if( $rows_i % 100 == 0 )
+	{
+		print sprintf( "%d/%d (%d%%)\n", $rows_i, $rows_n, $rows_i*100/$rows_n );
+	}
+	$profile = json_decode( $row['site_profile'] );
+	$hash = profileToHash( $profile );
+	foreach( $hash as $key=>$value )
+	{
+		$localdb->addRow( 
+			$row['site_domain'],
+			$row['site_crawled'],
+			$key,
+			$value );
+	}
+});
+print "DONE.\n";
+exit;
+
+function profileToHash( $profile, $path = "", &$r=array() )
+{
+	foreach( $profile as $key=>$value )
+	{
+		if( is_object( $value ) )
+		{
+			profileToHash( $value, "$key/", $r );
+			continue;
+		} 
+
+		if( is_array( $value ) ) { $value=join( "|",$value); }
+		$r[$path.$key]=$value;
+	}
+	return $r;
+}
+
+#	function addRow( $site, $date, $field, $value )
+   #[site_domain] => www.3d-fossils.ac.uk
+    #[site_crawled] => 2014-11-17 16:45:15
+    #[site_status] => OK
+    #[site_profile] => {"rss":[],"vimeoAccounts":[],"opd":false,"manifest":false,"jquery":true,"htmlelements":["font","iframe"],"instagramAc counts":[],"softwareWordCount":0,"facebookAccounts":[],"textStats":{"flesch_kincaid_reading_ease":46.6,"flesch_kincaid_grade":10.7,"gunning_fog":11.1,"coleman_liau":12,"smog":10.8,"automated_readability":10.8,"dale_chall_readability":8.6,"spache_readability":5,"letters":1858,"s entences":21,"words":377,"syllables":643,"words_per_sentence":17.95,"syllables_per_word":1.71},"flickrAccounts":[],"flickrGroups":[],"twitterAccounts":[],"wordpress":false,"pinterestAccounts":[],"linkedinAccounts":[],"drupal":false,"html5microdata":false,"youtubeAccounts":[],"y outubeVideo":true,"sharePoint":false,"googleAnalytics":false}
+	
