@@ -1,0 +1,14 @@
+<?php
+
+$config['srcdb']['user'] = 'xxx';
+$config['srcdb']['pass'] = 'xxx';
+$config['srcdb']['host'] = 'xxx';
+$config['srcdb']['db'] = 'xxx';
+
+$config['localdb']['user'] = 'xxx';
+$config['localdb']['host'] = 'xxx';
+$config['localdb']['db'] = 'xxx';
+$config['localdb']['pass'] = 'xxx';
+
+
+
