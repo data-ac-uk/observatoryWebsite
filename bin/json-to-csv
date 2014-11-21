@@ -1,9 +1,0 @@
-#!/usr/bin/env php
-<?php
-
-# calculate base path
-$path = explode("/", __DIR__);
-array_pop( $path ); # lose bin
-$base_dir = join( "/", $path );
-
-print $base_dir."\n";
