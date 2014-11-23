@@ -1,0 +1,102 @@
+#!/usr/bin/php -d memory_limit=256M 
+<?php
+
+$path = explode("/", __DIR__);
+array_pop( $path ); # lose bin
+$base_dir = join( "/", $path );
+
+require_once( "$base_dir/config.php" );
+require_once( "$base_dir/lib/apilib.php" );
+
+$archive_dir = "$base_dir/htdocs/data/observations/archive";
+$localdb = new LocalDB();
+
+# find all the gzip files
+$files = filesInDir( $archive_dir, '/\.json\.gz$/' );
+print "GOT FILELIST\n";
+
+# erase everything in the localdb
+$localdb->resetTables();
+print "ERASED DB\n";
+
+# for each gzip file (date)
+foreach( $files as $file )
+{
+	if( preg_match( '/(\d\d\d\d-\d\d-\d\d)/', $file, $bits ) )
+	{
+		$date = $bits[1];
+	}
+	else
+	{
+		print "no date in filename: $file\n";
+		exit(1);
+	}
+	print $date."\n";
+	# - unzip
+	$json = join( "", gzfile( $file ) );
+	# - decode
+	$data = json_decode( $json );
+	# - for each site
+	foreach( get_object_vars($data) as $site=>$info )
+	{
+		if( $info->site_status != 'OK' ) { continue; }
+		# convert profile to a simple hash
+		$hash = profileToHash( $info->site_profile );
+		#    store profile
+		foreach( $hash as $key=>$value )
+		{
+			$localdb->addRow( 
+				$site,
+				$date,
+				$key,
+				$value );
+		}
+	}
+}
+print "DONE.\n";
+exit;
+
+function filesInDir( $dir, $regexp )
+{
+	if( !$dh = opendir( $dir ) )
+	{
+		print "Can't read $dir\n";
+		exit(1);
+	}
+
+	$files = array();
+	while( $file = readdir( $dh ) )
+	{
+		if( preg_match( $regexp, $file ) )
+		{
+			$files []= "$dir/$file";
+		}
+	}
+	closedir( $dh );
+	ksort( $files );
+
+	return $files;
+}
+
+function profileToHash( $profile, $path = "", &$r=array() )
+{
+	foreach( $profile as $key=>$value )
+	{
+		if( is_object( $value ) )
+		{
+			profileToHash( $value, "$key/", $r );
+			continue;
+		} 
+
+		if( is_array( $value ) ) { $value=join( "|",$value); }
+		$r[$path.$key]=$value;
+	}
+	return $r;
+}
+
+#	function addRow( $site, $date, $field, $value )
+   #[site_domain] => www.3d-fossils.ac.uk
+    #[site_crawled] => 2014-11-17 16:45:15
+    #[site_status] => OK
+    #[site_profile] => {"rss":[],"vimeoAccounts":[],"opd":false,"manifest":false,"jquery":true,"htmlelements":["font","iframe"],"instagramAc counts":[],"softwareWordCount":0,"facebookAccounts":[],"textStats":{"flesch_kincaid_reading_ease":46.6,"flesch_kincaid_grade":10.7,"gunning_fog":11.1,"coleman_liau":12,"smog":10.8,"automated_readability":10.8,"dale_chall_readability":8.6,"spache_readability":5,"letters":1858,"s entences":21,"words":377,"syllables":643,"words_per_sentence":17.95,"syllables_per_word":1.71},"flickrAccounts":[],"flickrGroups":[],"twitterAccounts":[],"wordpress":false,"pinterestAccounts":[],"linkedinAccounts":[],"drupal":false,"html5microdata":false,"youtubeAccounts":[],"y outubeVideo":true,"sharePoint":false,"googleAnalytics":false}
+	

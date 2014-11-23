@@ -53,6 +53,55 @@ class LocalDB
 			return;
 		}
 	}		
+
+	function getTypeValues( $type )
+	{
+		$type = preg_replace( '/[^a-z]/', '', $type );
+		$sql = "SELECT DISTINCT $type AS v FROM data ORDER BY $type";
+		$stmt = $this->db->prepare($sql);
+		$stmt->bind_result($value);
+		$stmt->execute();
+
+		$values = array();
+		while ($stmt->fetch())
+		{
+			$values []= $value;
+		}
+		return $values;
+	}
+
+	function getData( $type, $typevalue )
+	{
+		if( $type == 'field' )
+		{
+			$sql = "SELECT date,site,value FROM data WHERE field=?";
+		}
+		elseif( $type == 'site' )
+		{
+			$sql = "SELECT date,field,value FROM data WHERE site=?";
+		}
+		elseif( $type == 'date' )
+		{
+			$sql = "SELECT field,site,value FROM data WHERE date=?";
+		}
+		else
+		{
+			print "this can't happen!";
+			exit;
+		}
+		$stmt = $this->db->prepare($sql);
+		$stmt->bind_param('s',$typevalue);
+		$stmt->bind_result($x,$y,$value);
+		$stmt->execute();
+
+		$values = array();
+		while ($stmt->fetch())
+		{
+			$values[$y][$x]=$value;
+		}
+		return $values;
+	}
+		
 }
 
 class SourceDB
